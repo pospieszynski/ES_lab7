@@ -1,12 +1,12 @@
 #include "FIFO.h"
 
-int initFIFO (struct FIFO* fifo) {
-  fifo->head=0;
-  fifo->tail=0;
+int initFIFO () {
+  Fifo->head=0;
+  Fifo->tail=0;
   return SUCCESS;
 }
 
-int pushToFIFO (struct FIFO* Fifo, char data) {
+int pushToFIFO (char data) {
   if ( (( Fifo->tail - Fifo->head) == 1 ) || ( (Fifo->tail == 0 && Fifo->head == BUFFER_SIZE) ) )
     return FAILURE;
   
@@ -16,7 +16,7 @@ int pushToFIFO (struct FIFO* Fifo, char data) {
   return SUCCESS;
 }
 
-int popFromFIFO (struct FIFO* Fifo, char* data) {
+int popFromFIFO (char* data) {
   if ((Fifo->head == Fifo->tail)) 
     return FAILURE;
   

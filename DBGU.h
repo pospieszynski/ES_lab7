@@ -8,7 +8,6 @@ void initInterrupts();
 void DBGUDisableInterrupts();
 void DBGUEnableInterrupts();
 void DGBUInterruptHandler();
-void spuriousInterruptHandler();
 
 void configurePIO();
 void resetTransmitter();

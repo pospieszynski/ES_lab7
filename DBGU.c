@@ -11,26 +11,40 @@ int initializeDGBU() {
 	configureBaudRate();
 	configureMode();
 	configurePIO();
-	
-	// TURN OFF ??
 	turnReceiverOn();
-	turnTransmitterOn();
 	return 0;
 }
 
 void DGBUInterruptHandler() {
   int interruptStatus;
   interruptStatus = AT91C_BASE_DBGU->DBGU_CSR;
+
+  char letter;
+
   if(interruptStatus & AT91C_BASE_DBGU->DBGU_IMR) { // interrupt from DBGU device
     if(interruptStatus & AT91C_US_TXRDY) { // transmitter interrupt
-      
+		if(popFromFIFO(&letter) == SUCCESS) { // popped sth from buffer
+			if(letter >= 'a' && letter <= 'z') { // modify data
+				letter -= CHARACTERS_OFFSET;
+			} else if(letter >= 'A' && letter <= 'Z') {
+				letter += CHARACTERS_OFFSET; 
+			}
+			sendCharacter(letter); // send to the user
+		} else { // fifo empty - stop transmission
+			turnTransmitterOff();
+			printString("\n\r");
+		}
     } else if(interruptStatus & AT91C_US_RXRDY) { // receiver interrupt
-      
+		readCharacter(&letter);
+		if( letter != '\r') { //non newline char
+			if(pushToFIFO(letter) == FAILURE) // attempt to push val to buffer
+				printString("\n\rBuffer overflow error.\r\n");
+		} else { // newline detected, start transmission procedure
+			turnTransmitterOn();
+		}
+    } else {
+  		printString("\n\rSpurious interrupt detected.\r\n");
     }
-}
-
-void spuriousInterruptHandler() {
-  
 }
 
 void initInterrupts() {
@@ -53,22 +67,11 @@ void initInterrupts() {
 	AT91C_BASE_AIC->AIC_IECR = 1 << AT91C_ID_SYS;
 	
 	DBGUEnableInterrupts();
-
 }
 
 void DBGUDisableInterrupts() {
   	AT91C_BASE_DBGU->DBGU_IDR=AT91C_US_RXRDY;
 	AT91C_BASE_DBGU->DBGU_IDR=AT91C_US_TXRDY;
-	AT91C_BASE_DBGU->DBGU_IDR=AT91C_US_ENDRX;
-	AT91C_BASE_DBGU->DBGU_IDR=AT91C_US_ENDTX;
-	AT91C_BASE_DBGU->DBGU_IDR=AT91C_US_OVRE;
-	AT91C_BASE_DBGU->DBGU_IDR=AT91C_US_FRAME;
-	AT91C_BASE_DBGU->DBGU_IDR=AT91C_US_PARE;
-	AT91C_BASE_DBGU->DBGU_IDR=AT91C_US_TXEMPTY;
-	AT91C_BASE_DBGU->DBGU_IDR=AT91C_US_TXBUFE;
-	AT91C_BASE_DBGU->DBGU_IDR=AT91C_US_RXBUFF;
-	AT91C_BASE_DBGU->DBGU_IDR=AT91C_US_COMM_TX;
-	AT91C_BASE_DBGU->DBGU_IDR=AT91C_US_COMM_RX;
 }
 
 void DBGUEnableInterrupts() {
@@ -98,11 +101,11 @@ void DBGUEnableInterrupts() {
 }
 
 void resetTransmitter() {
-	AT91C_BASE_DBGU->DBGU_CR=AT91C_US_RSTTX;
+	AT91C_BASE_DBGU->DBGU_CR = AT91C_US_RSTTX;
 }
 
 void resetReceiver() {
-	AT91C_BASE_DBGU->DBGU_CR=AT91C_US_RSTRX;
+	AT91C_BASE_DBGU->DBGU_CR = AT91C_US_RSTRX;
 }
 
 void turnReceiverOff() {
@@ -138,22 +141,6 @@ void configureMode() {
 	AT91C_BASE_DBGU->DBGU_MR = AT91C_US_PAR_NONE;
 }
 
-void printAlphabet() {
- // capital letters
- int letter = 'A';
- while( letter <= 'Z' ) {
-   sendCharacter((char)letter);
-   letter++;
- }
- 
- // small letters
- letter = 'a';
- while( letter <= 'z' ) {
-   sendCharacter((char)letter);
-   letter++;
- }
-}
-
 int printString(char *string) {
   int count_letters = 0;
 
@@ -171,20 +158,8 @@ char readCharacter(char* character_pointer) {
  return *character_pointer;
 }
 
-void reverseLetterCase() {
- char letter;
- readCharacter(&letter);
- 
- if(letter >= 'a' && letter <= 'z') {
-  letter -= CHARACTERS_OFFSET;
- } else if(letter >= 'A' && letter <= 'Z') {
-  letter += CHARACTERS_OFFSET; 
- }
- sendCharacter(letter);
-}
-
 void sendCharacter(char letter) {
-  while(!checkIfTransmitterReady());
+  while(!checkIfTransmitterReady()); // not needed anymore?
   AT91C_BASE_DBGU->DBGU_THR = (unsigned int)letter;
 }
 

@@ -3,11 +3,11 @@
 #define FAILURE -1
 
 typedef struct FIFO {
- char buffer[BUFFER_SIZE+1];	 
+ char buffer[BUFFER_SIZE+1];
  unsigned int head; 
  unsigned int tail;
-};	
+}Fifo;	
 
-int initFIFO (struct FIFO *Fifo);
-int pushToFIFO (struct FIFO *Fifo, char data);
-int popFromFIFO (struct FIFO *Fifo, char *data);
+int initFIFO ();
+int pushToFIFO (char data);
+int popFromFIFO (char *data);
