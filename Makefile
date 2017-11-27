@@ -6,7 +6,7 @@ LDFLAGS+=-nostartfiles -Wl -lc -lgcc -T /opt/arm_user/elf32-littlearm.lds -g -Tt
 OBJS=/opt/arm_user/include/cstartup.o /opt/arm_user/include/lowlevel.o DBGU.o FIFO.o
 #koniec, dalej mozna dowolnie zmieniac
 
-PROGRAM_NAME=fifo.elf
+PROGRAM_NAME=interrupts.elf
 
 all: $(PROGRAM_NAME)
 
@@ -18,11 +18,11 @@ $(PROGRAM_NAME): main.o DBGU.o FIFO.o
 main.o: main.c 
 	arm-elf-gcc -c $(CCFLAGS) $< -o $@
 
-DBGU.o: DBGU.c DBGU.h
-	arm-elf-gcc -c $(CCFLAGS) $< -o $@
+DBGU.o: DBGU.h DBGU.c
+	arm-elf-gcc -c $(CCFLAGS) DBGU.c -o $@
 
-FIFO.o: FIFO.c FIFO.h
-	arm-elf-gcc -c $(CCFLAGS) $< -o $@
+FIFO.o: FIFO.h FIFO.c
+	arm-elf-gcc -c $(CCFLAGS) FIFO.c -o $@
 
 clean:
-	rm -f *.o *.elf 
+	rm -f *.o *.elf

@@ -2,11 +2,11 @@
 #define SUCCESS 1
 #define FAILURE -1
 
-typedef struct FIFO {
+struct FIFO {
  char buffer[BUFFER_SIZE+1];
  unsigned int head; 
  unsigned int tail;
-}Fifo;	
+}Fifo;
 
 int initFIFO ();
 int pushToFIFO (char data);

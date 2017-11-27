@@ -1,8 +1,8 @@
 #include "AT91SAM9263.h"
 #include "DBGU.h"
+#include "FIFO.h"
 
 int initializeDGBU() {
-	initInterrupts();
 	
 	resetTransmitter();
 	turnTransmitterOff();
@@ -12,6 +12,9 @@ int initializeDGBU() {
 	configureMode();
 	configurePIO();
 	turnReceiverOn();
+	turnTransmitterOff();
+	
+	initInterrupts();
 	return 0;
 }
 
@@ -31,20 +34,24 @@ void DGBUInterruptHandler() {
 			}
 			sendCharacter(letter); // send to the user
 		} else { // fifo empty - stop transmission
-			turnTransmitterOff();
-			printString("\n\r");
+		  printString("\n\r");
+		  turnTransmitterOff();
 		}
     } else if(interruptStatus & AT91C_US_RXRDY) { // receiver interrupt
 		readCharacter(&letter);
 		if( letter != '\r') { //non newline char
-			if(pushToFIFO(letter) == FAILURE) // attempt to push val to buffer
+			if(pushToFIFO(letter) == FAILURE){ // attempt to push val to buffer
+				turnTransmitterOn();
 				printString("\n\rBuffer overflow error.\r\n");
+				turnTransmitterOff();
+			}
 		} else { // newline detected, start transmission procedure
 			turnTransmitterOn();
 		}
     } else {
   		printString("\n\rSpurious interrupt detected.\r\n");
     }
+  }
 }
 
 void initInterrupts() {
@@ -70,34 +77,36 @@ void initInterrupts() {
 }
 
 void DBGUDisableInterrupts() {
-  	AT91C_BASE_DBGU->DBGU_IDR=AT91C_US_RXRDY;
-	AT91C_BASE_DBGU->DBGU_IDR=AT91C_US_TXRDY;
+  	AT91C_BASE_DBGU->DBGU_IDR |= AT91C_US_RXRDY;
+	AT91C_BASE_DBGU->DBGU_IDR |= AT91C_US_TXRDY;
+	AT91C_BASE_DBGU->DBGU_IDR |= AT91C_US_RXRDY;
+	
+	AT91C_BASE_DBGU->DBGU_IDR |= AT91C_US_TXRDY;
+	
+	AT91C_BASE_DBGU->DBGU_IDR |= AT91C_US_ENDRX;
+	
+	AT91C_BASE_DBGU->DBGU_IDR |= AT91C_US_ENDTX;
+	
+	AT91C_BASE_DBGU->DBGU_IDR |= AT91C_US_OVRE;
+	
+	AT91C_BASE_DBGU->DBGU_IDR |= AT91C_US_FRAME;
+	
+	AT91C_BASE_DBGU->DBGU_IDR |= AT91C_US_PARE;
+	
+	AT91C_BASE_DBGU->DBGU_IDR |= AT91C_US_TXEMPTY;
+	
+	AT91C_BASE_DBGU->DBGU_IDR |= AT91C_US_TXBUFE;
+	
+	AT91C_BASE_DBGU->DBGU_IDR |= AT91C_US_RXBUFF;
+	
+	AT91C_BASE_DBGU->DBGU_IDR |= AT91C_US_COMM_TX;
+	
+	AT91C_BASE_DBGU->DBGU_IDR |= AT91C_US_COMM_RX;
 }
 
 void DBGUEnableInterrupts() {
-  	AT91C_BASE_DBGU->DBGU_IER |= AT91C_US_RXRDY;
-	
-	AT91C_BASE_DBGU->DBGU_IER |= AT91C_US_TXRDY;
-	
-	AT91C_BASE_DBGU->DBGU_IER |= AT91C_US_ENDRX;
-	
-	AT91C_BASE_DBGU->DBGU_IER |= AT91C_US_ENDTX;
-	
-	AT91C_BASE_DBGU->DBGU_IER |= AT91C_US_OVRE;
-	
-	AT91C_BASE_DBGU->DBGU_IER |= AT91C_US_FRAME;
-	
-	AT91C_BASE_DBGU->DBGU_IER |= AT91C_US_PARE;
-	
-	AT91C_BASE_DBGU->DBGU_IER |= AT91C_US_TXEMPTY;
-	
-	AT91C_BASE_DBGU->DBGU_IER |= AT91C_US_TXBUFE;
-	
-	AT91C_BASE_DBGU->DBGU_IER |= AT91C_US_RXBUFF;
-	
-	AT91C_BASE_DBGU->DBGU_IER |= AT91C_US_COMM_TX;
-	
-	AT91C_BASE_DBGU->DBGU_IER |= AT91C_US_COMM_RX;
+  	AT91C_BASE_DBGU->DBGU_IER = AT91C_US_RXRDY;
+	AT91C_BASE_DBGU->DBGU_IER = AT91C_US_TXRDY;
 }
 
 void resetTransmitter() {
@@ -159,7 +168,7 @@ char readCharacter(char* character_pointer) {
 }
 
 void sendCharacter(char letter) {
-  while(!checkIfTransmitterReady()); // not needed anymore?
+  while(!checkIfTransmitterReady());
   AT91C_BASE_DBGU->DBGU_THR = (unsigned int)letter;
 }
 

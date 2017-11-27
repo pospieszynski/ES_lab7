@@ -7,7 +7,7 @@ int initializeDGBU();
 void initInterrupts();
 void DBGUDisableInterrupts();
 void DBGUEnableInterrupts();
-void DGBUInterruptHandler();
+
 
 void configurePIO();
 void resetTransmitter();

@@ -1,2 +1,2 @@
 #!/bin/bash
-make clean && make && arm-elf-gdb fifo.elf
+make clean && make && arm-elf-gdb interrupts.elf
